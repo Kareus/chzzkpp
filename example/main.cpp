@@ -90,6 +90,19 @@ int main()
 
 			std::cout << u8"[" << nickname << u8"님의 " << amount << u8"원 " + donationType + u8" 후원!] " << message << std::endl;
 			});
+			
+		chat->addHandler(chzzkpp::ChzzkChatEvent::SUBSCRIPTION, [](auto& str) {
+			auto json = nlohmann::json::parse(str);
+			
+			std::string nickname = json["extras"]["nickname"];
+			int month = json["extras"]["month"];
+			std::string tierName = json["extras"]["tierName"];
+			//int tierNo = json["extras"]["tierNo"];
+
+			std::string message = json["message"];
+
+			std::cout << u8"[" << nickname << u8"님의 " << month << u8"개월 " << tierName << u8"구독!] " << message << std::endl;
+		});
 
 		chat->addHandler(chzzkpp::ChzzkChatEvent::NOTICE, [](auto& str) {
 			if (str.empty()) return;

@@ -58,6 +58,7 @@ namespace chzzkpp
 						message.clear();
 					}
 				}
+				else if (res == CURLE_GOT_NOTHING) continue;
 				else if (res != CURLE_AGAIN)
 				{
 					static const std::string ERR_MSG = "Error occured receiving message: ";
