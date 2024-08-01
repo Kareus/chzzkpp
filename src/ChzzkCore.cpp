@@ -134,14 +134,44 @@ namespace chzzkpp
 		return request(getVideoPath(videoNo));
 	}
 
-	std::string ChzzkCore::getRecommendationLives(int size)
+	std::string ChzzkCore::getTopViewerLives(int size)
 	{
-		return request(getRecommendationLivesPath(size));
+		return request(getTopViewerLivesPath(size));
 	}
 
-	std::string ChzzkCore::getRecommendationLives(const std::string& keyword, int size)
+	std::string ChzzkCore::getTopViewerLives(const std::string& keyword, int size)
 	{
-		return request(getRecommendationLivesPath(keyword, size));
+		return request(getTopViewerLivesPath(keyword, size));
+	}
+
+	std::string ChzzkCore::getRecommendationChannels(bool partner)
+	{
+		return request(partner ? CHZZK_API_PATH_RECOMMENDATION_PARTNERS : CHZZK_API_PATH_RECOMMENDATION_CHANNELS);
+	}
+
+	std::string ChzzkCore::getRecommendationLives()
+	{
+		return request(CHZZK_API_PATH_RECOMMENDATION_LIVES);
+	}
+
+	std::string ChzzkCore::getMissions(const std::string& channelID, bool mine, int page, int size)
+	{
+		return request(getChannelMissionsPath(channelID, mine, page, size));
+	}
+
+	std::string ChzzkCore::getChatDonationSetting(const std::string& channelID)
+	{
+		return request(getChatDonationSettingPath(channelID));
+	}
+
+	std::string ChzzkCore::getVideoDonationSetting(const std::string& channelID)
+	{
+		return request(getVideoDonationSettingPath(channelID));
+	}
+
+	std::string ChzzkCore::getMissionDonationSetting(const std::string& channelID)
+	{
+		return request(getMissionDonationSettingPath(channelID));
 	}
 
 	std::string ChzzkCore::getUserData()

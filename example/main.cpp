@@ -10,7 +10,17 @@
 #include <Windows.h>
 #endif
 
-using namespace std;
+void updateMissions(chzzkpp::ChzzkChat* chat, std::unordered_map<std::string, chzzkpp::ChzzkMissionInfo>& missions)
+{
+	auto client = chat->getClient();
+	auto missionResult = client->getMissions(chat->getCurrentChatOptions().channelID);
+
+	missions.clear();
+
+	for (auto& mission : missionResult.missions)
+		if (mission.status != chzzkpp::ChzzkMissionStatus::REJECTED)
+			missions[mission.ID] = mission;
+}
 
 int main()
 {
@@ -19,40 +29,27 @@ int main()
 #endif
 
 	chzzkpp::ChzzkCore* chzzk = new chzzkpp::ChzzkCore();
-	//chzzk->setAuth("NID_AUT", "NID_SES"); //로그인
+	//chzzk->setAuth("NID_AUT", "NID_SES");
 
 	chzzkpp::ChzzkClient client(chzzk);
 
-
-	//시청자 수 기준 상위 20명의 방송 조회
-	auto recommendation = client.getRecommendationLives(20);
+	auto recommendation = client.getTopViewerLives(20);
 
 	for (auto& live_info : recommendation.lives)
 	{
 		std::cout << u8"방송 제목: " << live_info.title << u8", 채널명: " << live_info.channelInfo.name << u8", 시청자 수: " << live_info.concurrentUserCount << std::endl;
 	}
 
+	auto channel = client.searchChannel(u8"스트리머 닉네임").channels[0];
+	auto live_detail = client.getLiveDetail(channel.ID);
 
-	//스트리머 닉네임으로 채널 검색
-	auto search_result = client.searchChannel(u8"스트리머 닉네임");
+	std::cout << std::endl << std::endl;
 
-	if (search_result.channels.empty())
-		std::cout << u8"검색 결과가 존재하지 않습니다. 다른 키워드로 시도해보세요." << std::endl;
-	else
-	{
-		auto channel = search_result.channels[0];
-		auto live_detail = client.getLiveDetail(channel.ID);
+	std::cout << u8"채널 이름: " << channel.name << std::endl;
+	std::cout << u8"방송 제목: " << live_detail.title << std::endl;
+	std::cout << u8"라이브 여부: " << live_detail.status << std::endl;
+	if (live_detail.status == "OPEN") std::cout << u8"시청자 수: " << live_detail.concurrentUserCount << std::endl;
 
-		std::cout << std::endl << std::endl;
-
-		std::cout << u8"채널 이름: " << channel.name << std::endl;
-		std::cout << u8"방송 제목: " << live_detail.title << std::endl;
-		std::cout << u8"라이브 여부: " << live_detail.status << std::endl;
-		if (live_detail.status == "OPEN") std::cout << u8"시청자 수: " << live_detail.concurrentUserCount << std::endl;
-	}
-
-
-	//채팅 연결
 	chzzkpp::ChzzkChatOptions option;
 	option.channelID = "스트리머 라이브 ID"; //chzzk.naver.com/live/***
 
@@ -69,9 +66,16 @@ int main()
 			std::string message = json["message"];
 
 			std::cout << nickname << ": " << message << std::endl;
-			});
+		});
 
-		size_t handlerID = chat->addHandler(chzzkpp::ChzzkChatEvent::DONATION, [](auto& str) {
+		std::unordered_map<std::string, chzzkpp::ChzzkMissionInfo> current_missions;
+
+		chat->addHandler(chzzkpp::ChzzkChatEvent::CONNECT, [&](auto& str) {
+			//update current missions
+			updateMissions(chat, current_missions);
+		});
+
+		size_t handlerID = chat->addHandler(chzzkpp::ChzzkChatEvent::DONATION, [&](auto& str) {
 			auto json = nlohmann::json::parse(str);
 
 			std::string nickname = "";
@@ -83,14 +87,14 @@ int main()
 			std::string message = json["message"];
 
 			std::string donationType = json["extras"]["donationType"];
-
+			
 			if (donationType == "CHAT") donationType = u8"채팅";
 			else if (donationType == "VIDEO") donationType = u8"영상";
 			else if (donationType == "MISSION") donationType = u8"미션";
 
-			std::cout << u8"[" << nickname << u8"님의 " << amount << u8"원 " + donationType + u8" 후원!] " << message << std::endl;
-			});
-			
+			std::cout << u8"[" << nickname << u8"님의 " << amount << u8"원 " + donationType + (donationType != u8"미션" ? u8" 후원!] " : u8" 등록!] ") << message << std::endl;
+		});
+
 		chat->addHandler(chzzkpp::ChzzkChatEvent::SUBSCRIPTION, [](auto& str) {
 			auto json = nlohmann::json::parse(str);
 			
@@ -111,14 +115,60 @@ int main()
 
 			std::string message = json["message"];
 			std::string nickname = json["extras"]["registerProfile"]["nickname"];
-			std::string userTitle = json["extras"]["registerProfile"]["title"]["name"];
-			//or, you can use: std::string userRoleCode = json["extras"]["registerProfile"]["userRoleCode"];
+			std::string userTitle = json["extras"]["registerProfile"]["title"]["name"]; //or, you can use: userRoleCode = json["extras"]["registerProfile"]["userRoleCode"];
 			std::cout << u8"[현재 고정된 메시지] (" << userTitle << ") " << nickname << ": " << message << std::endl;
-			});
+		});
+
+		chat->addHandler(chzzkpp::ChzzkChatEvent::EVENT, [&](auto& str) {
+			if (str.empty()) return;
+
+			auto json = nlohmann::json::parse(str);
+
+			std::string type = json["type"];
+
+			if (type == chzzkpp::ChzzkEventType::DONATION_MISSION_IN_PROGRESS)
+			{
+				std::string status = json["status"];
+
+				if (status == chzzkpp::ChzzkMissionStatus::COMPLETED)
+				{
+					bool success = json["success"];
+
+					std::string nickname = json["isAnonymous"] ? u8"(익명의 후원자)" : json["nickname"];
+
+					int payAmount = json["payAmount"];
+
+					std::cout << u8"[" << nickname << u8"님의 미션 " << (success ? u8"성공!] " : u8"실패...] ");
+					
+					std::string id = json["missionDonationId"];
+
+					if (!success)
+					{
+						if (current_missions.find(id) != current_missions.end())
+							payAmount = payAmount * current_missions[id].failCheeringRate / 100.f;
+						else
+						{
+							auto missionSetting = client.getMissionDonationSetting(chat->getCurrentChatOptions().channelID);
+
+							payAmount = payAmount * missionSetting.failCheeringRate / 100.f;
+						}
+					}
+
+					std::cout << payAmount << u8"원 획득" << std::endl;
+
+					current_missions.erase(id);
+				}
+				else
+				{
+					std::cout << u8"미션 상태가 업데이트되었습니다: " << status << std::endl;
+					updateMissions(chat, current_missions);
+				}
+			}
+		});
 
 		//chat->removeHandler(chzzkpp::ChzzkChatEvent::DONATION, handlerID); //if you want to remove the handler
 
-		while (!chat->isConnected())
+		while (!chat->isChatConnected())
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 		std::string line;

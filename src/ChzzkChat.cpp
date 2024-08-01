@@ -14,22 +14,13 @@ namespace chzzkpp
 
 	ChzzkChat::ChzzkChat(ChzzkClient* client, ChzzkChatOptions option, int timeout) : client(client), option(option), sid(""), uid(""), connected(false), reconnecting(false), isPolling(false), isPinging(false), timeout(timeout)
 	{
-		//initialize the curl
-		curl = curl_easy_init();
-
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-
-		curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 2L);
+		curl = nullptr;
 	}
 
 	ChzzkChat::~ChzzkChat()
 	{
 		if (connected) _close();
 		removeAllHandlers();
-
-		curl_easy_cleanup(curl);
-		curl = nullptr;
 	}
 
 	void ChzzkChat::_receive()
@@ -62,7 +53,14 @@ namespace chzzkpp
 				else if (res != CURLE_AGAIN)
 				{
 					static const std::string ERR_MSG = "Error occured receiving message: ";
-					throw std::exception((ERR_MSG + curl_easy_strerror(res)).c_str());
+
+#if _DEBUG
+					std::cerr << ERR_MSG << curl_easy_strerror(res) << std::endl;
+					std::cerr << "Trying to reopen the chat socket..." << std::endl;
+#endif
+
+					message.clear();
+					_reopen();
 				}
 			}
 
@@ -70,13 +68,61 @@ namespace chzzkpp
 		}
 	}
 
+	void ChzzkChat::_reopen()
+	{
+		size_t sent;
+		curl_ws_send(curl, "", 0, &sent, 0, CURLWS_CLOSE);
+
+		onClose();
+
+		curl = curl_easy_init();
+
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+		curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 2L);
+
+		curl_easy_setopt(curl, CURLOPT_URL, ws_path.c_str());
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
+
+		CURLcode res = curl_easy_perform(curl);
+
+		if (res != CURLE_OK)
+			throw std::exception(curl_easy_strerror(res));
+		else
+		{
+			connected = true;
+
+			nlohmann::json body = {
+					{"accTkn", option.accessToken},
+					{"auth", uid.empty() ? "READ" : "SEND"},
+					{"devType", 2001},
+					{"uid", uid}
+			};
+
+			nlohmann::json json = {
+				{"bdy", body },
+				{"cmd", ChatCommand::CONNECT},
+				{"tid", 1}
+			};
+
+			json.update(_default);
+
+			_send(json.dump());
+		}
+	}
 
 	void ChzzkChat::_connect()
 	{
-		//connect to the chat
-		if (connected) throw std::exception("Chat is already connected.");
-
 		std::lock_guard<std::mutex> guard(receiverMutex);
+
+		//initialize the curl
+		curl = curl_easy_init();
+
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+		curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 2L);
 
 		curl_easy_setopt(curl, CURLOPT_URL, ws_path.c_str());
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
@@ -100,6 +146,9 @@ namespace chzzkpp
 		}
 
 		if (receiverThread.joinable()) receiverThread.join();
+
+		curl_easy_cleanup(curl);
+		curl = nullptr;
 	}
 
 	void ChzzkChat::_send(const std::string& message)
@@ -135,7 +184,7 @@ namespace chzzkpp
 		_send(json.dump());
 
 #if _USE_CURL
-		receiverThread = std::thread(&ChzzkChat::_receive, this);
+		receiverThread = std::thread(std::bind(&ChzzkChat::_receive, this));
 #endif
 
 		if (!reconnecting) startPolling();
@@ -157,7 +206,8 @@ namespace chzzkpp
 
 		option.accessToken = "";
 		uid = "";
-
+		
+		chat_connected = false;
 		connected = false;
 	}
 
@@ -176,7 +226,10 @@ namespace chzzkpp
 	{
 		int pollCount = option.pollTime;
 
-		while (connected && isPolling)
+		while (!chat_connected || !isPolling)
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+		while (chat_connected && isPolling)
 		{
 			if (pollCount >= option.pollTime)
 			{
@@ -342,6 +395,7 @@ namespace chzzkpp
 			else
 				call(ChzzkChatEvent::CONNECT, "");
 
+			chat_connected = true;
 			break;
 
 		case ChatCommand::PING:
@@ -408,6 +462,10 @@ namespace chzzkpp
 			call(ChzzkChatEvent::NOTICE, body.empty() || body.is_null() ? "" : parseChat(body));
 			break;
 
+		case ChatCommand::EVENT:
+			call(ChzzkChatEvent::EVENT, body.dump());
+			break;
+
 		case ChatCommand::BLIND:
 			call(ChzzkChatEvent::BLIND, body.is_string() ? (std::string)body : body.dump()); //idk what comes here, so just converting it
 			break;
@@ -429,11 +487,14 @@ namespace chzzkpp
 
 	void ChzzkChat::connect()
 	{
+		//connect to the chat
+		if (connected) throw std::exception("Chat is already connected.");
+
 		if (!option.channelID.empty() && option.chatChannelID.empty())
 			option.chatChannelID = client->getLiveStatus(option.channelID).chatChannelID;
 		
 		if (option.chatChannelID.empty())
-			throw std::exception("Cannot find the chat... Check your channelID, or the live status is adult. You need to log in to access the adult live chat.");
+			throw std::exception("Cannot find the chat... Check your live status is adult. You need to log in to access the adult live chat.");
 
 		if (!option.chatChannelID.empty() && option.accessToken.empty())
 		{
@@ -457,6 +518,8 @@ namespace chzzkpp
 		serverID = serverID % 9 + 1;
 
 		ws_path = CHZZK_CHAT_WEBSOCKET_PATH_PREFIX + std::to_string(serverID) + CHZZK_CHAT_WEBSOCKET_PATH_SUFFIX;
+
+		if (receiverThread.joinable()) receiverThread.join();
 
 		_connect();
 	}
@@ -522,7 +585,7 @@ namespace chzzkpp
 
 	void ChzzkChat::requestRecentChat(int size)
 	{
-		if (!connected)
+		if (!chat_connected)
 			throw std::exception("Not Connected to the chat.");
 
 		nlohmann::json bdy = { {"recentMessageCount", size} };
@@ -540,7 +603,7 @@ namespace chzzkpp
 
 	void ChzzkChat::sendChat(const std::string& message, const std::map<std::string, std::string>& emojis)
 	{
-		if (!connected)
+		if (!chat_connected)
 			throw std::exception("Chat is not connected.");
 
 		if (uid.empty())
@@ -593,5 +656,15 @@ namespace chzzkpp
 	bool ChzzkChat::isConnected() const
 	{
 		return connected;
+	}
+
+	bool ChzzkChat::isChatConnected() const
+	{
+		return chat_connected;
+	}
+
+	ChzzkClient* ChzzkChat::getClient()
+	{
+		return client;
 	}
 }

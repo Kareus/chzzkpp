@@ -29,11 +29,17 @@ namespace chzzkpp
 		ChzzkVideo getVideo(int videoNo);
 
 		//gets live list in viewers count order
-		ChzzkRecommendResult getRecommendationLives(int size = 30);
+		ChzzkTopViewerResult getTopViewerLives(int size = 30);
 
 		//gets live list with keyword in viewers count order
 		//keyword should be utf8
-		ChzzkRecommendResult getRecommendationLives(const std::string& keyword, int size = 30);
+		ChzzkTopViewerResult getTopViewerLives(const std::string& keyword, int size = 30);
+
+		std::vector<ChzzkRecommendChannel> getRecommendationChannels();
+
+		std::vector<ChzzkRecommendPartnerChannel> getRecommendationPartners();
+
+		ChzzkLiveResult getRecommendationLives();
 
 		//you should be logged in (with ChzzkCore::setAuth) to get user data
 		ChzzkUserData getUserData();
@@ -48,6 +54,15 @@ namespace chzzkpp
 
 		//keyword should be utf8
 		ChzzkVideoResult searchVideo(const std::string& keyword, int offset = 0, int size = 20);
+
+		ChzzkMissionResult getMissions(const std::string& channelID, bool mine = false, int page = 0, int size = 50);
+
+		ChzzkChatDonationSetting getChatDonationSetting(const std::string& channelID);
+
+		ChzzkVideoDonationSetting getVideoDonationSetting(const std::string& channelID);
+
+		ChzzkMissionDonationSetting getMissionDonationSetting(const std::string& channelID);
+
 
 		ChzzkCore* getCore();
 	};

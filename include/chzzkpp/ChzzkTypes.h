@@ -96,7 +96,7 @@ namespace chzzkpp
 	struct ChzzkChannel : public ChzzkChannelInfo
 	{
 		std::string type;														//unknown: channel type. but I couldn't find any other value than "STREAMING"
-		bool openLive;															//when the channel is on live
+		bool openLive;															//whether the channel is on live
 		bool subscriptionAvailability;											//whether the channel subscription is available
 		ChzzkSubscriptionPaymentAvailability subscriptionPaymentAvailability;	//subscription payment availability
 		bool adMonetizationAvailability;										//whether ad monetization is available
@@ -141,8 +141,8 @@ namespace chzzkpp
 		bool chatDonationRankingExposure;			//whether the channel exposes donation ranking
 	};
 
-	//simple live info for recommendation or attached to other structs.
-	struct ChzzkLiveInfo
+	//simple live data attached to other structs.
+	struct ChzzkLiveBase
 	{
 		int ID;	//live id
 		std::string title;						//live title
@@ -162,10 +162,11 @@ namespace chzzkpp
 	};
 
 	//live struct when searched
-	struct ChzzkLive : public ChzzkLiveInfo
+	struct ChzzkLive : public ChzzkLiveBase
 	{
-		std::string chatChannelID;	//unique id of the live chat
-		std::string livePlayback;	//JSON data of live playback data
+		std::string chatChannelID;		//unique id of the live chat
+		std::string livePlayback;		//JSON data of live playback data
+		std::string dropsCampaignNo;	//TODO: new element to work
 	};
 	
 	//live detail
@@ -225,14 +226,14 @@ namespace chzzkpp
 
 	struct ChzzkResult
 	{
-		std::string keyword; //search keyword
-		int requested_size;			//requested search result size. not actual result size
-		int offset;			//requested search result offset.
+		std::string keyword;	//search keyword
+		int requested_size;		//requested search result size
+		int offset;				//requested search result offset
 	};
 
-	struct ChzzkRecommendResult : public ChzzkResult
+	struct ChzzkTopViewerResult : public ChzzkResult
 	{
-		std::vector<ChzzkLiveInfo> lives;
+		std::vector<ChzzkLiveBase> lives;
 	};
 
 	struct ChzzkChannelResult : public ChzzkResult
@@ -248,6 +249,94 @@ namespace chzzkpp
 	struct ChzzkVideoResult : public ChzzkResult
 	{
 		std::vector<ChzzkVideoInfo> videos;
+	};
+
+	//TODO: below are different data from base structs...
+
+	struct ChzzkRecommendChannelBase
+	{
+		std::string ID;					//channel ID
+		std::string name;				//channel name
+		std::string imageURL;			//url of the channel image
+		bool verified;					//whether the channel is verified
+		bool openLive;					//whether the channel is on live
+		std::string title;				//live title
+		int concurrentUserCount;		//the number of current viewers
+		std::string liveCategoryValue;	//output of the category name. ex) if liveCategory is "League_of_Legends", it will be "리그 오브 레전드"
+	};
+
+	struct ChzzkRecommendChannel : public ChzzkRecommendChannelBase
+	{
+		std::string contentLineage;		//unknown: json object
+	};
+
+	struct ChzzkRecommendPartnerChannel : public ChzzkRecommendChannelBase
+	{
+		std::string originalName;	//original nickname
+		bool isNewStreamer;			//whether the channel is new partner
+	};
+
+	struct ChzzkMissionInfo
+	{
+		std::string ID;						//mission donation id
+		std::string missionText;			//mission text
+		std::string channelID;				//channel ID of streamer
+		std::string type;					//mission type. idk there is other types than ALONE
+		int amount;							//pay amount
+		int failCheeringRate;				//streamer receiving percent if mission failed
+		std::string status;					//mission status
+		bool success;						//whether mission is success
+		int durationTime;					//mission duration time
+		std::string startTime;				//time mission started
+		std::string endTime;				//time mission ends
+		std::string createdTime;			//time mission created
+
+		std::string userIdHash;				//user id hash who created mission
+		std::string userNickname;			//user nickname
+		std::string userProfileImageURL;	//user profile image url
+		bool userVerified;					//whether user is verified
+
+		bool anonymous;						//whether user is anonymous
+
+		//unknown-type channel;
+		//unknown-type createdBadge;
+	};
+
+	struct ChzzkMissionResult
+	{
+		int page;	//mission page
+		int size;	//max mission size of the page
+		int totalCount;	//total mission count
+		int totalPages;	//total page count
+
+		std::vector<ChzzkMissionInfo> missions;
+	};
+
+	struct ChzzkDonationSetting
+	{
+		bool active;				//whether donation is active
+		int minCurrencyPayAmount;	//minimum pay amount
+	};
+
+	struct ChzzkChatDonationSetting : public ChzzkDonationSetting
+	{
+		bool exposureDonationAmount;	//whether to show donated amount
+	};
+
+	struct ChzzkVideoDonationSetting : public ChzzkDonationSetting
+	{
+		int payAmountPerSecond;			//pay amount per video seconds
+		int maxDurationLength;			//maxium length of video duration
+		bool isYoutubeAllowed;			//whether the youtube video is allowed to donate
+		bool isChzzkClipAllowed;		//whether the chzzk clip video is allowed to donate
+		bool isAllowedForSubscribers;	//whether video donation is allowed for only subscribers
+	};
+
+	struct ChzzkMissionDonationSetting : public ChzzkDonationSetting
+	{
+		int maxCurrencyPayAmount;		//maximum pay amount (not set if the value is 0)
+		int failCheeringRate;			//pay amount rate when mission failed
+		int coolTime;					//mission cool time
 	};
 }
 #endif

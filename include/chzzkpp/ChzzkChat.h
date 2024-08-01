@@ -62,7 +62,38 @@ namespace chzzkpp
 		DONATION,		//donation event. argument: donation message json
 		SUBSCRIPTION,	//subscription event. argument: subscription message json
 		SYSTEM_MESSAGE,	//system message event. argument: system message json
-		BLIND			//chat blind event. argument: blind alert message?
+		BLIND,			//chat blind event. argument: blind alert message?
+		EVENT			//several events. check out ChzzkEventType
+	};
+
+	//event types when ChzzkChatEvent::EVENT Triggered
+	namespace ChzzkEventType
+	{
+		static const char CHANGE_CHAT_MODE[] = "CHANGE_CHAT_MODE";
+		static const char CHANGE_DONATION_ACTIVE[] = "CHANGE_DONATION_ACTIVE";
+		static const char CHANGE_VIDEO_DONATION_SETTING[] = "CHANGE_VIDEO_DONATION_SETTING";
+		static const char CHANGE_MISSION_DONATION_SETTING[] = "CHANGE_DONATION_ACTIVE";
+		static const char LIVE_BLOCK[] = "LIVE_BLOCK";
+		static const char TEMPORARY_RESTRICT[] = "TEMPORARY_RESTRICT";
+		static const char RESTRICT_USER[] = "RESTRICT_USER";
+		static const char RELEASE_RESTRICT_USER[] = "RELEASE_RESTRICT_USER";
+		static const char IIMS_PENALTY[] = "IIMS_PENALTY";
+		static const char CHANGE_EMOJI_PACK[] = "CHANGE_EMOJI_PACK";
+		static const char CHANGE_MIN_PAY_AMOUNT[] = "CHANGE_MIN_PAY_AMOUNT";
+		static const char ADULT_LIVE[] = "ADULT_LIVE";
+		static const char ROLE_ADD[] = "ROLE_ADD";
+		static const char WARN_LIVE[] = "WARN_LIVE";
+		static const char OVER_PUBLISHING_OCCUR[] = "OVER_PUBLISHING_OCCUR";
+		static const char DONATION_MISSION_IN_PROGRESS[] = "DONATION_MISSION_IN_PROGRESS";
+	};
+
+	namespace ChzzkMissionStatus
+	{
+		static const char PENDING[] = "PENDING";
+		static const char APPROVED[] = "APPROVED";
+		static const char REJECTED[] = "REJECTED";
+		static const char COMPLETED[] = "COMPLETED";
+		static const char EXPIRED[] = "EXPIRED";
 	};
 
 	struct ChzzkChatOptions
@@ -87,7 +118,7 @@ namespace chzzkpp
 		CURL* curl;
 		std::thread receiverThread;
 		std::mutex receiverMutex;
-
+		
 		//message receive loop for libcurl
 		//if you are implementing with other websocket libraries, you would not have to implement this function if the library supports async callback or is already multi-threaded
 		void _receive();
@@ -96,6 +127,7 @@ namespace chzzkpp
 		//// library specific functions
 		////
 
+		void _reopen();
 		void _connect();
 		void _close();
 		void _send(const std::string& message);
@@ -116,6 +148,8 @@ namespace chzzkpp
 		static const int PING_TIME = 20 * 1000;
 
 		std::atomic<bool> connected;
+		std::atomic<bool> chat_connected;
+
 		std::string ws_path;
 		nlohmann::json _default;
 		bool reconnecting;
@@ -166,7 +200,14 @@ namespace chzzkpp
 
 		const ChzzkChatOptions& getCurrentChatOptions() const;
 
+		//whether socket is connected
 		bool isConnected() const;
+
+		//whether socket is connected to the chat and is able to communicate
+		bool isChatConnected() const;
+
+		ChzzkClient* getClient();
+
 	};
 }
 

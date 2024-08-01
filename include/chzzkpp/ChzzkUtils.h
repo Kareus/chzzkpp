@@ -56,9 +56,9 @@ namespace chzzkpp
 
 	std::string getVideoPath(int videoNo);
 
-	std::string getRecommendationLivesPath(int size);
+	std::string getTopViewerLivesPath(int size);
 
-	std::string getRecommendationLivesPath(const std::string& keyword, int size);
+	std::string getTopViewerLivesPath(const std::string& keyword, int size);
 
 	std::string getSearchChannelPath(const std::string& keyword, int offset, int size, bool withFirstChannelContent);
 
@@ -67,5 +67,13 @@ namespace chzzkpp
 	std::string getSearchVideoPath(const std::string& keyword, int offset, int size);
 
 	std::string getAccessTokenPath(const std::string& chatChannelID, const std::string& chatType = "STREAMING");
+
+	std::string getChannelMissionsPath(const std::string& channelID, bool mine, int page, int size);
+
+	std::string getChatDonationSettingPath(const std::string& channelID);
+
+	std::string getVideoDonationSettingPath(const std::string& channelID);
+
+	std::string getMissionDonationSettingPath(const std::string& channelID);
 }
 #endif

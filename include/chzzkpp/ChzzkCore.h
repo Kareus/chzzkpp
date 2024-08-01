@@ -32,13 +32,13 @@ namespace chzzkpp
 
 		std::pair<std::string, std::string> authKeys;
 
-		std::string request(const std::string& path);
-
 	public:
 
 		//@timeout respond timeout seconds. never times out if value is 0
 		ChzzkCore(int timeout = 0);
 		~ChzzkCore();
+
+		std::string request(const std::string& path);
 
 		//you can set NID_AUTH and NID_SESSION here.
 		//you can get these from NID_AUT and NID_SES cookies from Application > Cookies > https://chzzk.naver.com, after you logged in
@@ -59,14 +59,20 @@ namespace chzzkpp
 
 		std::string getVideo(int videoNo);
 
-		std::string getRecommendationLives(int size = 30);
+		std::string getTopViewerLives(int size = 30);
 
 		std::string getUserData();
 
 		std::string getAccessToken(const std::string& chatChannelID);
 
 		//keyword should be utf8
-		std::string getRecommendationLives(const std::string& keyword, int size = 30);
+		std::string getTopViewerLives(const std::string& keyword, int size = 30);
+
+		//get recommendation channels
+		std::string getRecommendationChannels(bool partner = false);
+
+		//get recommendation lives
+		std::string getRecommendationLives();
 
 		//keyword should be utf8
 		std::string searchChannel(const std::string& keyword, int offset = 0, int size = 20, bool withFirstChannelContent = false);
@@ -76,6 +82,15 @@ namespace chzzkpp
 
 		//keyword should be utf8
 		std::string searchVideo(const std::string& keyword, int offset = 0, int size = 20);
+
+		//you should be logged in to view your mission donations, if mine is true
+		std::string getMissions(const std::string& channelID, bool mine = false, int page = 0, int size = 50);
+
+		std::string getChatDonationSetting(const std::string& channelID);
+
+		std::string getVideoDonationSetting(const std::string& channelID);
+
+		std::string getMissionDonationSetting(const std::string& channelID);
 
 		bool hasAuth() const;
 	};

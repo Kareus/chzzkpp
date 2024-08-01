@@ -71,20 +71,20 @@ namespace chzzkpp
 		return CHZZK_API_PATH_PREFIX_VIDEO + std::to_string(videoNo);
 	}
 
-	std::string getRecommendationLivesPath(int size)
+	std::string getTopViewerLivesPath(int size)
 	{
-		std::string ret = CHZZK_API_PATH_PREFIX_RECOMMENDATION_LIVES;
+		std::string ret = CHZZK_API_PATH_PREFIX_TOP_VIEWER_LIVES;
 
-		ret += "size=" + std::to_string(size);
+		ret += "?size=" + std::to_string(size);
 
 		return ret;
 	}
 
-	std::string getRecommendationLivesPath(const std::string& keyword, int size)
+	std::string getTopViewerLivesPath(const std::string& keyword, int size)
 	{
-		std::string ret = CHZZK_API_PATH_PREFIX_RECOMMENDATION_LIVES;
+		std::string ret = CHZZK_API_PATH_PREFIX_TOP_VIEWER_LIVES;
 
-		ret += "keyword=" + keyword;
+		ret += "?keyword=" + keyword;
 		ret += "&size=" + std::to_string(size);
 
 		return ret;
@@ -94,7 +94,7 @@ namespace chzzkpp
 	{
 		std::string ret = CHZZK_API_PATH_PREFIX_SEARCH_CHANNEL;
 
-		ret += "keyword=" + keyword;
+		ret += "?keyword=" + keyword;
 		ret += "&offset=" + std::to_string(offset);
 		ret += "&size=" + std::to_string(size);
 		ret += "&withFirstChannelContent" + std::to_string(withFirstChannelContent);
@@ -106,7 +106,7 @@ namespace chzzkpp
 	{
 		std::string ret = CHZZK_API_PATH_PREFIX_SEARCH_LIVE;
 
-		ret += "keyword=" + keyword;
+		ret += "?keyword=" + keyword;
 		ret += "&offset=" + std::to_string(offset);
 		ret += "&size=" + std::to_string(size);
 
@@ -117,7 +117,7 @@ namespace chzzkpp
 	{
 		std::string ret = CHZZK_API_PATH_PREFIX_SEARCH_VIDEO;
 
-		ret += "keyword=" + keyword;
+		ret += "?keyword=" + keyword;
 		ret += "&offset=" + std::to_string(offset);
 		ret += "&size=" + std::to_string(size);
 
@@ -128,10 +128,36 @@ namespace chzzkpp
 	{
 		std::string ret = CHZZK_API_PATH_PREFIX_ACCESS_TOKEN;
 
-		ret += "channelId=" + chatChannelID;
+		ret += "?channelId=" + chatChannelID;
 		ret += "&chatType=" + chatType;
 
 		return ret;
+	}
+
+	std::string getChannelMissionsPath(const std::string& channelID, bool mine, int page, int size)
+	{
+		std::string ret = CHZZK_API_PATH_PREFIX_CHANNEL + channelID + CHZZK_API_PATH_SUFFIX_MISSIONS;
+
+		ret += "?mine=" + std::to_string(mine);
+		ret += "&page=" + std::to_string(page);
+		ret += "&size=" + std::to_string(size);
+
+		return ret;
+	}
+
+	std::string getChatDonationSettingPath(const std::string& channelID)
+	{
+		return CHZZK_API_PATH_PREFIX_CHANNEL + channelID + CHZZK_API_PATH_SUFFIX_DONATION_CHAT_SETTING;
+	}
+
+	std::string getVideoDonationSettingPath(const std::string& channelID)
+	{
+		return CHZZK_API_PATH_PREFIX_CHANNEL + channelID + CHZZK_API_PATH_SUFFIX_DONATION_VIDEO_SETTING;
+	}
+
+	std::string getMissionDonationSettingPath(const std::string& channelID)
+	{
+		return CHZZK_API_PATH_PREFIX_CHANNEL + channelID + CHZZK_API_PATH_SUFFIX_DONATION_MISSION_SETTING;
 	}
 
 	template <>
@@ -318,9 +344,9 @@ namespace chzzkpp
 	}
 
 	template <>
-	ChzzkLiveInfo parse(nlohmann::json json)
+	ChzzkLiveBase parse(nlohmann::json json)
 	{
-		ChzzkLiveInfo info;
+		ChzzkLiveBase info;
 
 		json_safe_get(info.ID, json, "liveId");
 		json_safe_get(info.title, json, "liveTitle");
@@ -494,5 +520,122 @@ namespace chzzkpp
 			video.adParameter = json["adParameter"].dump();
 
 		return video;
+	}
+
+	template <>
+	ChzzkRecommendChannel parse(nlohmann::json json)
+	{
+		ChzzkRecommendChannel channel;
+
+		json_safe_get(channel.ID, json, "channelId");
+
+		json_safe_get(channel.name, json["channel"], "channelName");
+		json_safe_get(channel.imageURL, json["channel"], "channelImageUrl");
+		json_safe_get(channel.verified, json["channel"], "verifiedMask");
+
+		json_safe_get(channel.openLive, json["streamer"], "openLive");
+
+		json_safe_get(channel.title, json["liveInfo"], "liveTitle");
+		json_safe_get(channel.concurrentUserCount, json["liveInfo"], "concurrentUserCount");
+		json_safe_get(channel.liveCategoryValue, json["liveInfo"], "liveCategoryValue");
+
+		json_safe_get(channel.contentLineage, json, "contentLineage");
+
+		return channel;
+	}
+
+	template <>
+	ChzzkRecommendPartnerChannel parse(nlohmann::json json)
+	{
+		ChzzkRecommendPartnerChannel channel;
+
+		json_safe_get(channel.ID, json, "channelId");
+		json_safe_get(channel.imageURL, json, "channelImageUrl");
+		json_safe_get(channel.originalName, json, "originalNickname");
+		json_safe_get(channel.name, json, "channelName");
+		json_safe_get(channel.verified, json, "verifiedMask");
+		json_safe_get(channel.openLive, json, "openLive");
+		json_safe_get(channel.isNewStreamer, json, "newStreamer");
+		json_safe_get(channel.title, json, "liveTitle");
+		json_safe_get(channel.concurrentUserCount, json, "concurrentUserCount");
+		json_safe_get(channel.liveCategoryValue, json, "liveCategoryValue");
+
+		return channel;
+	}
+
+	template <>
+	ChzzkMissionInfo parse(nlohmann::json json)
+	{
+		ChzzkMissionInfo info;
+
+		json_safe_get(info.ID, json, "missionDonationId");
+		json_safe_get(info.missionText, json, "missionText");
+		json_safe_get(info.channelID, json, "channelId");
+		json_safe_get(info.type, json, "missionType");
+		json_safe_get(info.amount, json, "amount");
+		json_safe_get(info.failCheeringRate, json, "failCheeringRate");
+		json_safe_get(info.status, json, "status");
+		json_safe_get(info.success, json, "success");
+		json_safe_get(info.durationTime, json, "missionDurationTime");
+		json_safe_get(info.startTime, json, "missionStartTime");
+		json_safe_get(info.endTime, json, "missionEndTime");
+		json_safe_get(info.createdTime, json, "createdTime");
+
+		if (json.find("user") != json.end())
+		{
+			json_safe_get(info.userIdHash, json["user"], "userIdHash");
+			json_safe_get(info.userNickname, json["user"], "nickname");
+			json_safe_get(info.userProfileImageURL, json["user"], "profileImageUrl");
+			json_safe_get(info.userVerified, json["user"], "verifiedMask");
+		}
+
+		json_safe_get(info.anonymous, json, "anonymous");
+
+		//json_safe_get(info.channel, json, "channel");
+		//json_safe_get(info.createdBadge, json, "createdBadge");
+
+		return info;
+	}
+
+	template <>
+	ChzzkChatDonationSetting parse(nlohmann::json json)
+	{
+		ChzzkChatDonationSetting setting;
+
+		json_safe_get(setting.active, json, "donationActive");
+		json_safe_get(setting.minCurrencyPayAmount, json, "minCurrencyPayAmount");
+		json_safe_get(setting.exposureDonationAmount, json, "exposureDonationAmount");
+
+		return setting;
+	}
+
+	template <>
+	ChzzkVideoDonationSetting parse(nlohmann::json json)
+	{
+		ChzzkVideoDonationSetting setting;
+
+		json_safe_get(setting.active, json, "donationActive");
+		json_safe_get(setting.minCurrencyPayAmount, json, "minCurrencyPayAmount");
+		json_safe_get(setting.payAmountPerSecond, json, "payAmountPerSecond");
+		json_safe_get(setting.maxDurationLength, json, "maxDurationLength");
+		json_safe_get(setting.isYoutubeAllowed, json, "isYoutubeVideoAllow");
+		json_safe_get(setting.isChzzkClipAllowed, json, "isChzzkClipAllow");
+		json_safe_get(setting.isAllowedForSubscribers, json, "isAllowForSubscriber");
+
+		return setting;
+	}
+
+	template <>
+	ChzzkMissionDonationSetting parse(nlohmann::json json)
+	{
+		ChzzkMissionDonationSetting setting;
+
+		json_safe_get(setting.active, json, "donationActive");
+		json_safe_get(setting.minCurrencyPayAmount, json, "minCurrencyPayAmount");
+		json_safe_get(setting.maxCurrencyPayAmount, json, "maxCurrencyPayAmount");
+		json_safe_get(setting.failCheeringRate, json, "failCheeringRate");
+		json_safe_get(setting.coolTime, json, "cooltime");
+
+		return setting;
 	}
 }
