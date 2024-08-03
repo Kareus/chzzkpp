@@ -29,7 +29,7 @@ namespace chzzkpp
 		const struct curl_ws_frame* meta;
 		std::string message;
 
-		while (connected)
+				while (connected)
 		{
 			{
 				std::lock_guard<std::mutex> guard(receiverMutex);
@@ -49,7 +49,6 @@ namespace chzzkpp
 						message.clear();
 					}
 				}
-				else if (res == CURLE_GOT_NOTHING) continue;
 				else if (res != CURLE_AGAIN)
 				{
 					static const std::string ERR_MSG = "Error occured receiving message: ";
