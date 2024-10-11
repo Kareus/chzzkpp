@@ -594,6 +594,11 @@ namespace chzzkpp
 		//json_safe_get(info.channel, json, "channel");
 		//json_safe_get(info.createdBadge, json, "createdBadge");
 
+		json_safe_get(info.totalAmount, json, "totalAmount");
+		json_safe_get(info.missionType, json, "missionType");
+		json_safe_get(info.participationCount, json, "participationCount");
+		json_safe_get(info.relatedMissionID, json, "relatedMissionDonationId");
+
 		return info;
 	}
 

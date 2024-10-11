@@ -298,8 +298,13 @@ namespace chzzkpp
 
 		bool anonymous;						//whether user is anonymous
 
-		//unknown-type channel;
+		//unknown-type channel;				//unknown: would be json object
 		//unknown-type createdBadge;
+
+		int totalAmount;					//total pay amount, including parcitipated missions
+		std::string missionType;			//missionType: ALONE | GROUP | PARTICIPATION
+		int participationCount;				//number of extra mission participants (ALONE if 0, GROUP otherwise)
+		std::string relatedMissionID;		//ID of participating mission
 	};
 
 	struct ChzzkMissionResult

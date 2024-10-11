@@ -224,14 +224,14 @@ namespace chzzkpp
 
 	ChzzkVideoDonationSetting ChzzkClient::getVideoDonationSetting(const std::string& channelID)
 	{
-		auto content = getContent(core->getChatDonationSetting(channelID));
+		auto content = getContent(core->getVideoDonationSetting(channelID));
 
 		return parse<ChzzkVideoDonationSetting>(content);
 	}
 
 	ChzzkMissionDonationSetting ChzzkClient::getMissionDonationSetting(const std::string& channelID)
 	{
-		auto content = getContent(core->getChatDonationSetting(channelID));
+		auto content = getContent(core->getMissionDonationSetting(channelID));
 
 		return parse<ChzzkMissionDonationSetting>(content);
 	}

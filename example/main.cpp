@@ -18,7 +18,7 @@ void updateMissions(chzzkpp::ChzzkChat* chat, std::unordered_map<std::string, ch
 	missions.clear();
 
 	for (auto& mission : missionResult.missions)
-		if (mission.status != chzzkpp::ChzzkMissionStatus::REJECTED)
+		if (mission.status == chzzkpp::ChzzkMissionStatus::APPROVED)
 			missions[mission.ID] = mission;
 }
 
@@ -91,8 +91,16 @@ int main()
 			if (donationType == "CHAT") donationType = u8"채팅";
 			else if (donationType == "VIDEO") donationType = u8"영상";
 			else if (donationType == "MISSION") donationType = u8"미션";
+			else if (donationType == "MISSION_PARTICIPATION")
+				std::cout << u8"[" << nickname << u8"님께서 " << amount << u8"원의 상금을 미션에 추가하셨습니다!] " << message << std::endl;
+			else
+			{
+				//unknown
+				std::cout << json.dump(4) << std::endl;
+			}
 
-			std::cout << u8"[" << nickname << u8"님의 " << amount << u8"원 " + donationType + (donationType != u8"미션" ? u8" 후원!] " : u8" 등록!] ") << message << std::endl;
+			if (donationType == u8"채팅" || donationType == u8"영상" || donationType == u8"미션")
+				std::cout << u8"[" << nickname << u8"님의 " << amount << u8"원 " + donationType + (donationType != u8"미션" ? u8" 후원!] " : u8" 등록!] ") << message << std::endl;
 		});
 
 		chat->addHandler(chzzkpp::ChzzkChatEvent::SUBSCRIPTION, [](auto& str) {
@@ -136,7 +144,7 @@ int main()
 
 					std::string nickname = json["isAnonymous"] ? u8"(익명의 후원자)" : json["nickname"];
 
-					int payAmount = json["payAmount"];
+					int totalPayAmount = json["totalPayAmount"];
 
 					std::cout << u8"[" << nickname << u8"님의 미션 " << (success ? u8"성공!] " : u8"실패...] ");
 					
@@ -145,16 +153,16 @@ int main()
 					if (!success)
 					{
 						if (current_missions.find(id) != current_missions.end())
-							payAmount = payAmount * current_missions[id].failCheeringRate / 100.f;
+							totalPayAmount = totalPayAmount * current_missions[id].failCheeringRate / 100.f;
 						else
 						{
 							auto missionSetting = client.getMissionDonationSetting(chat->getCurrentChatOptions().channelID);
 
-							payAmount = payAmount * missionSetting.failCheeringRate / 100.f;
+							totalPayAmount = totalPayAmount * missionSetting.failCheeringRate / 100.f;
 						}
 					}
 
-					std::cout << payAmount << u8"원 획득" << std::endl;
+					std::cout << totalPayAmount << u8"원 획득" << std::endl;
 
 					current_missions.erase(id);
 				}
@@ -163,6 +171,10 @@ int main()
 					std::cout << u8"미션 상태가 업데이트되었습니다: " << status << std::endl;
 					updateMissions(chat, current_missions);
 				}
+			}
+			else if (type == chzzkpp::ChzzkEventType::DONATION_MISSION_PARTICIPATION)
+			{
+				//you can check particiation mission (funding) info here (participated or completed)
 			}
 		});
 
