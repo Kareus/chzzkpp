@@ -88,10 +88,10 @@ int main()
 
 			std::string donationType = json["extras"]["donationType"];
 			
-			if (donationType == "CHAT") donationType = u8"채팅";
-			else if (donationType == "VIDEO") donationType = u8"영상";
-			else if (donationType == "MISSION") donationType = u8"미션";
-			else if (donationType == "MISSION_PARTICIPATION")
+			if (donationType == chzzkpp::ChzzkDonationType::CHAT) donationType = u8"채팅";
+			else if (donationType == chzzkpp::ChzzkDonationType::VIDEO) donationType = u8"영상";
+			else if (donationType == chzzkpp::ChzzkDonationType::MISSION) donationType = u8"미션";
+			else if (donationType == chzzkpp::ChzzkDonationType::MISSION_PARTICIPATION)
 				std::cout << u8"[" << nickname << u8"님께서 " << amount << u8"원의 상금을 미션에 추가하셨습니다!] " << message << std::endl;
 			else
 			{

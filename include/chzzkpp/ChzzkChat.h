@@ -85,6 +85,7 @@ namespace chzzkpp
 		static const char WARN_LIVE[] = "WARN_LIVE";
 		static const char OVER_PUBLISHING_OCCUR[] = "OVER_PUBLISHING_OCCUR";
 		static const char DONATION_MISSION_IN_PROGRESS[] = "DONATION_MISSION_IN_PROGRESS";
+		static const char DONATION_MISSION_PARTICIPATION[] = "DONATION_MISSION_PARTICIPATION";
 	};
 
 	namespace ChzzkMissionStatus
@@ -94,6 +95,14 @@ namespace chzzkpp
 		static const char REJECTED[] = "REJECTED";
 		static const char COMPLETED[] = "COMPLETED";
 		static const char EXPIRED[] = "EXPIRED";
+	};
+
+	namespace ChzzkDonationType
+	{
+		static const char CHAT[] = "CHAT";
+		static const char VIDEO[] = "VIDEO";
+		static const char MISSION[] = "MISSION";
+		static const char MISSION_PARTICIPATION[] = "MISSION_PARTICIPATION";
 	};
 
 	struct ChzzkChatOptions
